@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package calculator;
+
+option go_package = "github.com/dyjh/grpc_calculator/calculator";
+
+service Calculator {
+  rpc Calculate (CalculateRequest) returns (CalculateResponse);
+}
+
+message CalculateRequest {
+  float num1 = 1;
+  float num2 = 2;
+  Operation operation = 3;
+}
+
+message CalculateResponse {
+  float result = 1;
+}
+
+enum Operation {
+  ADD = 0;
+  SUBTRACT = 1;
+  MULTIPLY = 2;
+  DIVIDE = 3;
+}
