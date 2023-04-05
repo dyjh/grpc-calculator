@@ -6,44 +6,59 @@ import (
 	"log"
 	"net"
 
+	"github.com/dyjh/grpc_calculator/calculator"
 	"google.golang.org/grpc"
-
-	pb "github.com/dyjh/grpc_calculator/calculator"
 )
 
 type server struct {
-	pb.UnimplementedCalculatorServer
+	calculator.UnimplementedCalculatorServer
 }
 
-func (s *server) Calculate(ctx context.Context, req *pb.CalculateRequest) (*pb.CalculateResponse, error) {
-	var res float32
-	switch req.Operation {
-	case pb.Operation_ADD:
-		res = req.Num1 + req.Num2
-	case pb.Operation_SUBTRACT:
-		res = req.Num1 - req.Num2
-	case pb.Operation_MULTIPLY:
-		res = req.Num1 * req.Num2
-	case pb.Operation_DIVIDE:
-		res = req.Num1 / req.Num2
-	default:
-		return nil, fmt.Errorf("Invalid operation")
+func (*server) Calculate(ctx context.Context, req *calculator.CalculateRequest) (*calculator.CalculateResponse, error) {
+	num1 := req.GetNum1()
+	num2 := req.GetNum2()
+	operation := req.GetOperation()
+
+	var result float32
+	switch operation {
+	case calculator.Operation_ADD:
+		result = num1 + num2
+	case calculator.Operation_SUBTRACT:
+		result = num1 - num2
+	case calculator.Operation_MULTIPLY:
+		result = num1 * num2
+	case calculator.Operation_DIVIDE:
+		if num2 == 0 {
+			return nil, fmt.Errorf("division by zero is not allowed")
+		}
+		result = num1 / num2
 	}
 
-	return &pb.CalculateResponse{Result: res}, nil
+	return &calculator.CalculateResponse{Result: result}, nil
+}
+
+func (*server) Compare(ctx context.Context, req *calculator.CompareRequest) (*calculator.CompareResponse, error) {
+	num1 := req.GetNum1()
+	num2 := req.GetNum2()
+
+	max := num1
+	if num2 > num1 {
+		max = num2
+	}
+
+	return &calculator.CompareResponse{Max: max}, nil
 }
 
 func main() {
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterCalculatorServer(grpcServer, &server{})
+	s := grpc.NewServer()
+	calculator.RegisterCalculatorServer(s, &server{})
 
-	log.Println("gRPC server started on :50051")
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve gRPC server: %v", err)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
 	}
 }

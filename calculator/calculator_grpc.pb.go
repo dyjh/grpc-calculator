@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Calculator_Calculate_FullMethodName = "/calculator.Calculator/Calculate"
+	Calculator_Compare_FullMethodName   = "/calculator.Calculator/Compare"
 )
 
 // CalculatorClient is the client API for Calculator service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalculatorClient interface {
 	Calculate(ctx context.Context, in *CalculateRequest, opts ...grpc.CallOption) (*CalculateResponse, error)
+	Compare(ctx context.Context, in *CompareRequest, opts ...grpc.CallOption) (*CompareResponse, error)
 }
 
 type calculatorClient struct {
@@ -46,11 +48,21 @@ func (c *calculatorClient) Calculate(ctx context.Context, in *CalculateRequest, 
 	return out, nil
 }
 
+func (c *calculatorClient) Compare(ctx context.Context, in *CompareRequest, opts ...grpc.CallOption) (*CompareResponse, error) {
+	out := new(CompareResponse)
+	err := c.cc.Invoke(ctx, Calculator_Compare_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalculatorServer is the server API for Calculator service.
 // All implementations must embed UnimplementedCalculatorServer
 // for forward compatibility
 type CalculatorServer interface {
 	Calculate(context.Context, *CalculateRequest) (*CalculateResponse, error)
+	Compare(context.Context, *CompareRequest) (*CompareResponse, error)
 	mustEmbedUnimplementedCalculatorServer()
 }
 
@@ -60,6 +72,9 @@ type UnimplementedCalculatorServer struct {
 
 func (UnimplementedCalculatorServer) Calculate(context.Context, *CalculateRequest) (*CalculateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
+}
+func (UnimplementedCalculatorServer) Compare(context.Context, *CompareRequest) (*CompareResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Compare not implemented")
 }
 func (UnimplementedCalculatorServer) mustEmbedUnimplementedCalculatorServer() {}
 
@@ -92,6 +107,24 @@ func _Calculator_Calculate_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Calculator_Compare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServer).Compare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Calculator_Compare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServer).Compare(ctx, req.(*CompareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Calculator_ServiceDesc is the grpc.ServiceDesc for Calculator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +135,10 @@ var Calculator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Calculate",
 			Handler:    _Calculator_Calculate_Handler,
+		},
+		{
+			MethodName: "Compare",
+			Handler:    _Calculator_Compare_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
