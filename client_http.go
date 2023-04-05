@@ -3,9 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CalculateRequest struct {
@@ -14,44 +15,73 @@ type CalculateRequest struct {
 	Operation string  `json:"operation"`
 }
 
-type CalculateResponse struct {
-	Result float32 `json:"result"`
+type CompareRequest struct {
+	Num1 float32 `json:"num1"`
+	Num2 float32 `json:"num2"`
 }
 
 func main() {
-	// 调用 Calculate 方法
-	calculateReq := CalculateRequest{
-		Num1:      10,
-		Num2:      5,
-		Operation: "add",
-	}
+	r := gin.Default()
 
-	jsonData, err := json.Marshal(calculateReq)
-	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return
-	}
+	baseURL := "http://localhost:8000"
 
-	// 请根据您的 Kong 配置修改 URL
-	resp, err := http.Post("http://localhost:8000/calculate", "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("Error making HTTP request:", err)
-		return
-	}
-	defer resp.Body.Close()
+	// 路由1：计算操作
+	r.POST("/calculate", func(ctx *gin.Context) {
+		var req CalculateRequest
+		if err := ctx.BindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return
-	}
+		jsonData, err := json.Marshal(req)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-	var calculateRes CalculateResponse
-	err = json.Unmarshal(body, &calculateRes)
-	if err != nil {
-		fmt.Println("Error unmarshaling JSON:", err)
-		return
-	}
+		resp, err := http.Post(baseURL+"/calculate", "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
 
-	fmt.Printf("Result of calculation: %v\n", calculateRes.Result)
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		var result map[string]interface{}
+		json.Unmarshal(body, &result)
+
+		ctx.JSON(http.StatusOK, result)
+	})
+
+	// 路由2：比较两个参数的大小并返回较大值
+	r.POST("/compare", func(ctx *gin.Context) {
+		var req CompareRequest
+		if err := ctx.BindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		jsonData, err := json.Marshal(req)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		resp, err := http.Post(baseURL+"/compare", "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		var result map[string]interface{}
+		json.Unmarshal(body, &result)
+
+		ctx.JSON(http.StatusOK, result)
+	})
+
+	r.Run(":8080")
 }

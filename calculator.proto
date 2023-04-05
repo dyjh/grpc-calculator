@@ -2,11 +2,23 @@ syntax = "proto3";
 
 package calculator;
 
-option go_package = "github.com/dyjh/grpc_calculator/calculator";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/dyjh/grpc_calculator/calculatorpb";
 
 service Calculator {
-  rpc Calculate(CalculateRequest) returns (CalculateResponse);
-  rpc Compare(CompareRequest) returns (CompareResponse);
+  rpc Calculate(CalculateRequest) returns (CalculateResponse) {
+    option (google.api.http) = {
+      post: "/calculate"
+      body: "*"
+    };
+  }
+  rpc Compare(CompareRequest) returns (CompareResponse) {
+    option (google.api.http) = {
+      post: "/compare"
+      body: "*"
+    };
+  }
 }
 
 message CalculateRequest {
