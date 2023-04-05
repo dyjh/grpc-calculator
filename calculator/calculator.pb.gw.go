@@ -2,7 +2,7 @@
 // source: calculator.proto
 
 /*
-Package calculatorpb is a reverse proxy.
+Package calculator is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
